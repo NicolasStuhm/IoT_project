@@ -27,7 +27,8 @@ The insights this project will hopefully provide to those reproducing it are:
 | PIR motion sensor ![pir sensor](https://teknikprojektet.se/wp-content/uploads/2020/04/pir.jpg)                                                                             | This sensor detects motion in the greenhouse, for instance from unwanted visitors like cats or rabbits.                                  | ebay.com       | 20 kr        |
 | Batteries ![batteries](https://i5.walmartimages.com/asr/829fe603-6500-40ff-a678-9e62c4ca2a4a.9e886b05ead4c0ca2b36eeaa9711251c.png?odnHeight=612&odnWidth=612&odnBg=FFFFFF) | Eight of these AA batteries connected in series are necessary to provide the electromagnetic lock with enough volts(12) to open.          | ICA            | 50 kr        |
 
-In addition, I build a little box out of wood, as I needed some kind of container to connect the eight batteries in series.
+In addition, I build a little box out of wood, as I needed some kind of container to connect the eight batteries in series.<br>
+The last part one might need in case the door does not fall open by itself, is a feather/spring to keep the door under tension, such that it opens as soon as the lock is triggered.
 <br><br>
 
 
@@ -46,18 +47,171 @@ _Figure one, physical setup diagram_<br><br>
 
 When starting the project, I intended to use a transformer or two 9 volt batteries and limit them down to 12 volts with a 10k and 15k resistor, however the final descision fell on eight 1.5 volts batteries connected in series to get the desired output. This setup is the most energy- and cost efficient solution, which in theory could be used for production.
 
-Concerning the websites and platforms, I am using adafruit io and IFTTT. Adafruit is a website, which provides so called "feeds" which accept data from for example a microcontroller. I am using two different feeds, one for the temperature and one to monitor if the pir sensor has detected motion. This data is the visualised by a different tool within adafruit: the dashboard. <br>
-With the other service, IFTTT, one can create applets, which in my case read certain values from one of my afruit feeds and send a message to my phone that the pir sensor had been triggered. The limit is at two applets, however one can choose a paid subscription to unlock more.
+Concerning the websites and platforms, I am using adafruit io and IFTTT. Adafruit is a website, which provides so called "feeds" which accept data from for example a microcontroller. I am using two different feeds, one for the temperature and one to monitor if the pir sensor has detected motion. This data is the visualised by a different tool within adafruit: the dashboard: <br><br>
+
+Starting with the gauge on the left in figure two: it displays the current temperature, is capped at -5 and 75 degrees celsius and changes colors to blue or red when falling below 15 or rising above 45 degrees, respectively. These values are not predefined and one can easily be modified.<br>
+One the right in figure two, a chart keeps track of the development of the temperature over the past 24 hours.
+![picture of the temp](pictures/Sk%C3%A4rmbild%202023-07-02%20061032.png)
+_Figure two, gauge and chart dispalying the temperature_<br><br>
+Visible on the left is a log, keeping track of when the door was opened and when the pir sensor was triggered. The textfield on the right, lets a user enter a value, such as "open" which is then added to the feed and executed, in case the codeword has a predefined action the code. This is not the standard way of opening the lock, it either opens by itself, reacting to the temperature in the greenhouse or it can be opened by a pushbutton in the IFTTT application (more on that soon). This textfield is some kind of "backdoor".
+![picture of the motion and door log](pictures/Sk%C3%A4rmbild%202023-07-02%20061049.png)
+_Figure three, log for pir and door + textfield_<br>
+
+With the other service, IFTTT, one can create applets, which in my case read certain values from one of my adafruit feeds and send a message to my phone that the pir sensor had been triggered. The limit is at two applets, however one can choose a paid subscription to unlock more. Using this app, I have added a pushbutton to my homescreen, that, when pressed, sends the value "open" to the corresponding feed, which in turn opens the lock.<br>
+
+![picture of the open button](pictures/Screenshot_20230702-064857_Samsung%20Experience%20Home.jpg)
+_Figure four, button to open the lock_
 
 # The code
-not in its final state yet, coming soon
+```python
+import time
+import ubinascii
+from lib.simple import MQTTClient
+import machine
+```
+Three of the imports, namely time, ubinascii and maschine can simply be copied. The last one, MQTTClient, requires you to run the following command in your terminal: ``pip install micropython-umqtt.simple``
 
+The import should then look like this:
+```python
+from umqttsimple import MQTTClient
+```
+However, for some reason the file containing the MQTTClient class had a different name, which forced me to change the name in the import. In case you run into the same issue, I used the ``os`` library in python and the terinal to retrieve the name.
+
+The following block of code simply contains variable and pin definitions:
+```python
+CLIENT_ID = ubinascii.hexlify(machine.unique_id())
+MQTT_BROKER = "io.adafruit.com"
+PORT = 1883
+ADAFRUIT_USERNAME = # your username
+ADAFRUIT_PASSWORD = # your password
+PUBLISH_TOPIC_ONE = b'your publish topic key'
+SUBSCRIBE_TOPIC_TWO = b'your subscribe topic key'
+PUBLISH_TOPIC_TWO = b'your publish topic key'
+
+last_publish = time.time()
+publish_interval = 15
+
+led = machine.Pin("LED", mode=machine.Pin.OUT)
+led.off()
+pico_temp = machine.ADC(4)
+factor_celsius = 3.3 / (65535)
+relay = machine.Pin("GP16", mode=machine.Pin.OUT)
+motion_interrupt = machine.Pin("GP0", mode=machine.Pin.IN,
+                               pull=machine.Pin.PULL_DOWN)
+motion_detect = False
+time.sleep(2)
+```
+The ``pico_temp`` and ``factor_celsius`` are there to take the temperature reading of the pico w and turn the value into a number of degrees in celsius. One can also choose to convert to fahrenheit.
+
+
+The following code snippet shows the majority of the functions I am using.
+```python
+# definition of an interrupt function
+def interrupt(pin):
+    global motion_detect
+    motion_detect = True
+
+
+# if the pin the pir sensor is connected to changes its value
+# from 0 to 1 (log to high), the interrupt function from
+# above is called and the global variable is set
+motion_interrupt.irq(trigger=machine.Pin.IRQ_RISING, handler=interrupt)
+
+
+# with this funtion, the global variable from above is checked
+# and acted upon depending on its state
+def detect():
+    global motion_detect
+    if motion_detect:
+        motion_detect = False
+        return True
+
+
+# this function "receives" the messages from adafruit.io
+def sub_cb(topic, msg):
+    print((topic, msg))
+    if msg.decode() == "open":
+        openDoor()
+
+
+# reset the pico in case an error in main had been encountered
+def reset():
+    print("Resetting...")
+    time.sleep(5)
+    machine.reset()
+
+
+# open the lock, wait for five seconds such that the door
+# can swing open and close to save battery
+def openDoor():
+    relay.high()
+    time.sleep(5)
+    relay.off()
+
+
+# this function reads the temperature from the built in temp
+# sensor on the pico W
+def get_temperature_reading():
+    reading = pico_temp.read_u16() * factor_celsius
+    return 27 - (reading - 0.706) / 0.001721
+```
+
+```python
+def main():
+    # some code copied from the course material, which serves
+    # to connect the pico to adafruit.io
+    print(f"Begin connection with MQTT Broker :: {MQTT_BROKER}")
+    mqttClient = MQTTClient(CLIENT_ID, MQTT_BROKER, PORT, ADAFRUIT_USERNAME,
+                            ADAFRUIT_PASSWORD, keepalive=60)
+    mqttClient.set_callback(sub_cb)
+    mqttClient.connect()
+    mqttClient.subscribe(SUBSCRIBE_TOPIC_TWO)
+    print(f"Connected to MQTT  Broker :: {MQTT_BROKER}")
+
+    # variables for the door (see further down)
+    doorOpen = False
+    lastReset = time.time()
+    # initialising temp, because it cannot be "nothing"
+    temp = 15
+    while True:
+        try:
+            global last_publish
+            # check for a message from adafruit
+            mqttClient.check_msg()
+            # if something is detected, publish it on adafruit
+            # which leads to a pop up on the phone
+            if detect():
+                mqttClient.publish(PUBLISH_TOPIC_TWO, "detect".encode())
+            # send the current temp every 15 sec to adafruit
+            if (time.time() - last_publish) >= publish_interval:
+                temp = get_temperature_reading()
+                mqttClient.publish(PUBLISH_TOPIC_ONE, str(temp).encode())
+                last_publish = time.time()
+            # open the door based on the temperature
+            if not doorOpen and temp > 15:
+                # set doorOpen to true, such that the lock is
+                # not opened whenever the temp is over 15
+                # (quite ofter throughout the day)
+                doorOpen = True
+                openDoor()
+            # reset doorOpen openafter one day
+            # ideally this device should be initialised
+            # early in the morning
+            if (time.time() - lastReset) >= 86400:
+                doorOpen = False
+                lastReset = time.time()
+        except Exception as error:
+            print(error)
+```
 # Connectivity
-I am using wifi and the MQQT protocol to send data from my microcontroller to the adafruit website. I decided to send a temperature reading every half an hour and the pir sensor, obviously, sends whenever it is triggered. The second platform, IFTTT (installed on my phone), is connected via a webhook to the adafruit website and pops a notification whenever a previously defined value arrives in the adafruit feed. 
+I am using wifi and the MQTT protocol to send data from my microcontroller to the adafruit website. I decided to send a temperature reading every 15 seconds and the pir sensor, obviously, sends whenever it is triggered. The second platform, IFTTT (installed on my phone), is connected via a webhook to the adafruit website and pops a notification whenever the value "detect" arrives in the adafruit feed.
 
 
 # Final thoughts
-This project did not go as intended as firstly non of the hardware worked (due to my laptop I guess) and second, midway through the course I found out that my project had to act upon sensory data and I therefore had to shift my it completely.<br><br>
-In addition, I am certainly not satisfied with the final product and would like to implement a few more things. I wanted to buy a new DHT11, as mine burned out in the last week, such that I could show a humidity measurement on my dashboard and act upon those readings. Other ideas are soil moisture sensor to check when the plants need more water or a buzzer, which is beeping at a certain frequency, in order to scare away cats or other animals.
+This project did not go as intended as firstly non of the hardware worked (due to my laptop I guess) and second, midway through the course I found out that my project had to act upon sensory data and I therefore had to shift it completely.<br><br>
+In addition, I am certainly not satisfied with the final product and would like to implement a few more things. I wanted to buy a new DHT11, as mine burned out in the last week, such that I could show a humidity measurement on my dashboard and act upon those readings. Other ideas are soil moisture sensor to check when the plants need more water, a buzzer, which is beeping at a certain frequency, in order to scare away cats or other animals or a camera, which is activated when the pir sensor detects something, such that one could check if there actually is an animal in the greenhouse.
 
-On the positive side, the courese touched on many aspects of the IoT and I am happy I could extend my knowledge a bit.
+On the positive side, the courese touched on many aspects of the IoT and I am happy I could extend my knowledge a bit.<br><br>
+Here a few pictures of the final product:
+![picture of my lockscreen](pictures/Screenshot_20230702-061617_Samsung%20Experience%20Home.jpg)
+![picture of the device](pictures/20230702_061842.jpg)
