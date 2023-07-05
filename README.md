@@ -7,7 +7,7 @@ The device resulting from this project should be installed in/on a greenhouse an
 <br>
 
 # Objective
-The reason I chose this project is that I myself am living on a farm together with some friends of mine and I intend to make our lives a little easier with this device. The temperature sensor makes it unnecessary to walk to the remote greenhouse, as it lets the user observe the values online. Based on those, one can estimate how often the plants need water throughout the day and furthermore, the door of the greenhouse opens automatically in the morning, when the temperature rises above a certain temperature. Previous cases have led me to include a motion detector, as there had been cats or other animals digging in the soil or destroying the tomato- or other plants.
+The reason I chose this project is that I myself am living on a farm together with some friends of mine and I intend to make our lifes a little easier with this device. The temperature sensor makes it unnecessary to walk to the remote greenhouse, as it lets the user observe the values online. Based on those, one can estimate how often the plants need water throughout the day and furthermore, the door of the greenhouse opens automatically in the morning, when the temperature rises above a certain temperature. Previous cases have led me to include a motion detector, as there had been cats or other animals digging in the soil or destroying the tomato- or other plants.
 
 The insights this project will hopefully provide to those reproducing it are:
 - a general understanding of how IoT devices operate
@@ -34,7 +34,7 @@ The last part one might need in case the door does not fall open by itself, is a
 
 # Setup
 My subject of studies lies within the realm of IT, so I did not have to go about installing a lot of software. The IDE I am using is Visual Studio Code, with the plugins flake8 and Pico-W-Go. I had, in the beginning, installed Thonny, in order to test and try it, however, I thought it is somewhat limited and one would have more opportunities using VS code.<br>
-The flashing, that is the installation of the new firmware (uf2 file), I had to do on a different computer, as mine did not recognise the pico W as mass storage space and I was therefore not able to copy the file needed to it. The process is simple. One must plug the pico W in with an USB cable, while holding down the BOOTSEL button on the board. Now the computer should "see" the micorcontroller like a simple USB stick and a certain file containing firmware, which can be found online must be copied to it. After that, disconnect and connect the pico W again.<br>
+The flashing, that is the installation of the new firmware (uf2 file), I had to do on a different computer, as mine did not recognise the pico W as mass storage space and I was therefore not able to copy the file needed to it. The process is simple. One must plug the pico W in with an USB cable, while holding down the BOOTSEL button on the board. Now the computer should "see" the micorcontroller like a simple USB stick and a certain file containing firmware, which can be found online, must be copied to it. After that, disconnect and connect the pico W again.<br>
 Another problem arose during connecting the pico W to my IDE. I had to disable the "Auto Connect" option in the Pico-W-Go extension and specified the port "COM6" in the "Manual Com Device" (also part of the Pico-W-Go extension), in order for it to work.<br>
 
 For you with a well functioning laptop this might not be necessary, but I also had to install a new driver for the pico w to be recognised by my computer.
@@ -50,7 +50,7 @@ When starting the project, I intended to use a transformer or two 9 volt batteri
 Concerning the websites and platforms, I am using adafruit io and IFTTT. Adafruit is a website, which provides so called "feeds" which accept data from for example a microcontroller. I am using two different feeds, one for the temperature and one to monitor if the pir sensor has detected motion. This data is the visualised by a different tool within adafruit: the dashboard: <br><br>
 
 Starting with the gauge on the left in figure two: it displays the current temperature, is capped at -5 and 75 degrees celsius and changes colors to blue or red when falling below 15 or rising above 45 degrees, respectively. These values are not predefined and one can easily be modified.<br>
-One the right in figure two, a chart keeps track of the development of the temperature over the past 24 hours.
+One the right in figure two, a chart keeps track of the development of the temperature over the past 24 hours. Both of these visualisation tools, along with many others, can be found under adafruit.io, dashboard, settings and finally add block.
 ![picture of the temp](pictures/Sk%C3%A4rmbild%202023-07-02%20061032.png)
 _Figure two, gauge and chart dispalying the temperature_<br><br>
 Visible on the left is a log, keeping track of when the door was opened and when the pir sensor was triggered. The textfield on the right, lets a user enter a value, such as "open" which is then added to the feed and executed, in case the codeword has a predefined action the code. This is not the standard way of opening the lock, it either opens by itself, reacting to the temperature in the greenhouse or it can be opened by a pushbutton in the IFTTT application (more on that soon). This textfield is some kind of "backdoor".
@@ -84,8 +84,10 @@ MQTT_BROKER = "io.adafruit.com"
 PORT = 1883
 ADAFRUIT_USERNAME = # your username
 ADAFRUIT_PASSWORD = # your password
+# this topic receives the temperature data (every 15 seconds)
 PUBLISH_TOPIC_ONE = b'your publish topic key'
 SUBSCRIBE_TOPIC_TWO = b'your subscribe topic key'
+# this topic receives the dynmaic pir sensor data
 PUBLISH_TOPIC_TWO = b'your publish topic key'
 
 last_publish = time.time()
@@ -156,6 +158,7 @@ def get_temperature_reading():
     return 27 - (reading - 0.706) / 0.001721
 ```
 
+And finally the main function, connecting to adafruit with the credentials defined above and executing the corresponding functions to send the temperature and movement detection signals to the adafruit.io feeds.
 ```python
 def main():
     # some code copied from the course material, which serves
@@ -212,6 +215,6 @@ This project did not go as intended as firstly non of the hardware worked (due t
 In addition, I am certainly not satisfied with the final product and would like to implement a few more things. I wanted to buy a new DHT11, as mine burned out in the last week, such that I could show a humidity measurement on my dashboard and act upon those readings. Other ideas are soil moisture sensor to check when the plants need more water, a buzzer, which is beeping at a certain frequency, in order to scare away cats or other animals or a camera, which is activated when the pir sensor detects something, such that one could check if there actually is an animal in the greenhouse.
 
 On the positive side, the courese touched on many aspects of the IoT and I am happy I could extend my knowledge a bit.<br><br>
-Here a few pictures of the final product:
+Here some pictures of the final product:
 ![picture of my lockscreen](pictures/Screenshot_20230702-061617_Samsung%20Experience%20Home.jpg)
 ![picture of the device](pictures/20230702_061842.jpg)
