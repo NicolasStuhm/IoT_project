@@ -7,7 +7,7 @@ The device resulting from this project should be installed in/on a greenhouse an
 <br>
 
 # Objective
-The reason I chose this project is that I myself am living on a farm together with some friends of mine and I intend to make our lifes a little easier with this device. The temperature sensor makes it unnecessary to walk to the remote greenhouse, as it lets the user observe the values online. Based on those, one can estimate how often the plants need water throughout the day and furthermore, the door of the greenhouse opens automatically in the morning, when the temperature rises above a certain temperature. Previous cases have led me to include a motion detector, as there had been cats or other animals digging in the soil or destroying the tomato- or other plants.
+The reason I chose this project is that I myself am living on a farm together with some friends of mine and I intend to make our lifes a little easier with this device. The temperature sensor makes it unnecessary to walk to the remote greenhouse, as it lets the user observe the values online. Based on those, one can estimate how often the plants need water throughout the day and furthermore, the door of the greenhouse opens automatically in the morning, when the temperature rises above a certain threshold. Previous cases have led me to include a motion detector, as there had been cats or other animals digging in the soil or destroying the tomato- or other plants.
 
 The insights this project will hopefully provide to those reproducing it are:
 - a general understanding of how IoT devices operate
@@ -19,22 +19,24 @@ The insights this project will hopefully provide to those reproducing it are:
 # Material
 | component                                                                                                                                                                  | purpose                                                                                                                                  | where to buy   | cost         |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|----------------|--------------|
-| RPI Pico W ![pico w](https://m.media-amazon.com/images/I/41FwT1rutlL.jpg)                                                                                                  | This is the microcontroller, which is taking care of connecting to the internet and managing the other electronic parts of this project. | electrokit.com | in a package |
-| Jumper wires ![jumper wires](https://lawicel-shop.se/images/zoom/11026-jumper_wires_standard_7in._m_m_-_30_awg__30_pack_-01.jpg)                                           | The jumper wires server the purpose of connecting the different parts of the project with eachother.                                     | electrokit.com | in a package |
-| Breadboard ![breadboard](https://cdn.sparkfun.com/assets/d/c/a/b/4/513a1dface395fa524000001.JPG)                                                                           | The breadboard is the base, where connections from the pico to for instance the relay are made.                                          | electrokit.com | in a package |
+| RPI Pico W ![pico w](https://m.media-amazon.com/images/I/41FwT1rutlL.jpg)                                                                                                  | This is the microcontroller, which is taking care of connecting to the internet and managing the other electronic parts of this project. In addition, it has a build in temperature sensor which we will be using. | electrokit.com | 98 kr |
+| Jumper wires ![jumper wires](https://lawicel-shop.se/images/zoom/11026-jumper_wires_standard_7in._m_m_-_30_awg__30_pack_-01.jpg)                                           | The jumper wires server the purpose of connecting the different parts of the project with eachother.                                     | electrokit.com | 39 kr|
+| Breadboard ![breadboard](https://cdn.sparkfun.com/assets/d/c/a/b/4/513a1dface395fa524000001.JPG)                                                                           | The breadboard is the base, where connections from the pico to for instance the relay are made.                                          | electrokit.com | 69 kr |
 | Relay ![relay](https://quickbutik.imgix.net/7394y/products/5e0298f64b2f9.jpeg?auto=format)                                                                                 | The relay activates the electromagnetic lock when told so by the pico.                                                                   | ebay.com       | 10 kr        |
 | Electromagentic lock ![elect. lock](https://i.ebayimg.com/images/g/dGkAAOSwDvxiqFoP/s-l1600.jpg)                                                                           | This lock keeps the door closed until activated by the pico, which leads the door to swing open.                                         | ebay.com       | 50 kr        |
 | PIR motion sensor ![pir sensor](https://teknikprojektet.se/wp-content/uploads/2020/04/pir.jpg)                                                                             | This sensor detects motion in the greenhouse, for instance from unwanted visitors like cats or rabbits.                                  | ebay.com       | 20 kr        |
 | Batteries ![batteries](https://i5.walmartimages.com/asr/829fe603-6500-40ff-a678-9e62c4ca2a4a.9e886b05ead4c0ca2b36eeaa9711251c.png?odnHeight=612&odnWidth=612&odnBg=FFFFFF) | Eight of these AA batteries connected in series are necessary to provide the electromagnetic lock with enough volts(12) to open.          | ICA            | 50 kr        |
 
+Please not that I bought the pico w as well as the jumper wires and the breaboard in a package from electrokit. The actual price of the three components might differ depending on the platform and in case one chooses to buy the same package, since it includes other items, the price will be around 400 kr.<br>
 In addition, I build a little box out of wood, as I needed some kind of container to connect the eight batteries in series.<br>
 The last part one might need in case the door does not fall open by itself, is a feather/spring to keep the door under tension, such that it opens as soon as the lock is triggered.
 <br><br>
 
 
 # Setup
-My subject of studies lies within the realm of IT, so I did not have to go about installing a lot of software. The IDE I am using is Visual Studio Code, with the plugins flake8 and Pico-W-Go. I had, in the beginning, installed Thonny, in order to test and try it, however, I thought it is somewhat limited and one would have more opportunities using VS code.<br>
-The flashing, that is the installation of the new firmware (uf2 file), I had to do on a different computer, as mine did not recognise the pico W as mass storage space and I was therefore not able to copy the file needed to it. The process is simple. One must plug the pico W in with an USB cable, while holding down the BOOTSEL button on the board. Now the computer should "see" the micorcontroller like a simple USB stick and a certain file containing firmware, which can be found online, must be copied to it. After that, disconnect and connect the pico W again.<br>
+My subject of studies lies within the realm of IT, so I did not have to go about installing a lot of software. The IDE I am using is [Visual Studio Code](https://code.visualstudio.com/), with the plugins flake8 and Pico-W-Go. I had, in the beginning, installed [Thonny](https://thonny.org/), in order to test and try it, however, I thought it is somewhat limited and one would have more opportunities using VS code.<br>
+
+The flashing, that is the installation of the new firmware (uf2 file which can be found [here](https://micropython.org/download/rp2-pico-w/)), I had to do on a different computer, as mine did not recognise the pico W as mass storage space and I was therefore not able to copy the file needed to it. The process is simple. One must plug the pico W in with an USB cable, while holding down the BOOTSEL button on the board. Now the computer should "see" the micorcontroller like a simple USB stick and a certain file containing firmware, which can be found online, must be copied to it. After that, disconnect and connect the pico W again.<br>
 Another problem arose during connecting the pico W to my IDE. I had to disable the "Auto Connect" option in the Pico-W-Go extension and specified the port "COM6" in the "Manual Com Device" (also part of the Pico-W-Go extension), in order for it to work.<br>
 
 For you with a well functioning laptop this might not be necessary, but I also had to install a new driver for the pico w to be recognised by my computer.
@@ -62,6 +64,9 @@ With the other service, IFTTT, one can create applets, which in my case read cer
 ![picture of the open button](pictures/Screenshot_20230702-064857_Samsung%20Experience%20Home.jpg)
 _Figure four, button to open the lock_
 
+
+One might choose to set up a local database or rent a cloud service to save, for instance, four temperature readings captured at different times of the day and observe those values over months and possibly years. However this is not included in this project and data is only saved on adafruit in the temperature chart and the log for not more than 24 hours.<br>
+For those who want to try, the [mysql workbench](https://www.mysql.com/products/workbench/) is a good and free tool for beginners.
 # The code
 ```python
 import time
